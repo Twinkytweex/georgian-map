@@ -70,22 +70,101 @@
       <div class="modal-box">
         <span class="close-btn" @click="closeModal">&times;</span>
 
-        <div class="modal-header">
-          <img 
-            :src="modal.data.picture_url || placeholderImg" 
-            class="modal-flag"
-            @error="handleImgError"
-            alt="Flag"
-          >
-          <div>
-            <h2 class="modal-title">{{ modal.data.name_geo }}</h2>
-            <span class="modal-subtitle">{{ modal.data.name_eng }}</span>
+        <!-- Carousel Container -->
+        <div class="carousel-wrapper">
+          <div class="carousel-container">
+            <div class="carousel-track" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
+              <!-- Slide 1: Flag/Main Image -->
+              <div class="carousel-slide">
+                <img 
+                  :src="modal.data.picture_url || placeholderImg" 
+                  @error="handleImgError"
+                  alt="Region Flag"
+                  class="slide-img"
+                >
+              </div>
+              <!-- Slide 2: Placeholder gradient -->
+              <div class="carousel-slide slide-gradient-1">
+                <svg class="slide-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+                </svg>
+              </div>
+              <!-- Slide 3: Placeholder gradient -->
+              <div class="carousel-slide slide-gradient-2">
+                <svg class="slide-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                </svg>
+              </div>
+            </div>
+
+            <!-- Navigation Arrows -->
+            <button @click="prevSlide" class="carousel-arrow carousel-prev" aria-label="Previous">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button @click="nextSlide" class="carousel-arrow carousel-next" aria-label="Next">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Carousel Dots -->
+          <div class="carousel-dots">
+            <button 
+              v-for="i in totalSlides" 
+              :key="i"
+              @click="goToSlide(i - 1)"
+              :class="['dot', { active: currentSlide === i - 1 }]"
+              :aria-label="`Go to slide ${i}`"
+            ></button>
           </div>
         </div>
 
-        <div class="modal-body">
-          <p class="desc-geo" v-if="currentLang === 'ka'"><strong>აღწერა:</strong> {{ modal.data.description_geo || 'ინფორმაცია ბაზაში არ მოიძებნა.' }}</p>
-          <p class="desc-eng" v-if="currentLang === 'en'"><strong>Description:</strong> {{ modal.data.description_eng || 'No description available.' }}</p>
+        <!-- Topic Tabs -->
+        <div class="topic-tabs">
+          <button 
+            @click="switchTab(0)" 
+            :class="['topic-tab', { active: currentTab === 0 }]"
+          >
+            <svg class="tab-icon" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+            </svg>
+            <span>{{ currentLang === 'en' ? 'Overview' : 'მიმოხილვა' }}</span>
+          </button>
+          <button 
+            @click="switchTab(1)" 
+            :class="['topic-tab', { active: currentTab === 1 }]"
+          >
+            <svg class="tab-icon" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+            </svg>
+            <span>{{ currentLang === 'en' ? 'Details' : 'დეტალები' }}</span>
+          </button>
+        </div>
+
+        <!-- Topic Content -->
+        <div class="topic-content">
+          <!-- Tab 1: Overview -->
+          <div v-show="currentTab === 0" class="topic-page">
+            <h2 class="topic-title">{{ modal.data.name_geo }}</h2>
+            <h3 class="topic-subtitle">{{ modal.data.name_eng }}</h3>
+            <p class="topic-text" v-if="currentLang === 'ka'">{{ modal.data.description_geo || 'ინფორმაცია ბაზაში არ მოიძებნა.' }}</p>
+            <p class="topic-text" v-if="currentLang === 'en'">{{ modal.data.description_eng || 'No description available.' }}</p>
+          </div>
+
+          <!-- Tab 2: Details -->
+          <div v-show="currentTab === 1" class="topic-page">
+            <h2 class="topic-title">{{ currentLang === 'en' ? 'Additional Information' : 'დამატებითი ინფორმაცია' }}</h2>
+            <p class="topic-text">
+              <strong>{{ currentLang === 'en' ? 'Region:' : 'რეგიონი:' }}</strong> {{ modal.data.name_geo }}<br>
+              <strong>{{ currentLang === 'en' ? 'English Name:' : 'ინგლისური სახელი:' }}</strong> {{ modal.data.name_eng }}
+            </p>
+            <p class="topic-text" v-if="modal.data.is_capital">
+              <span class="capital-badge">{{ currentLang === 'en' ? 'Capital City' : 'დედაქალაქი' }}</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -141,6 +220,11 @@ let map = null;
 let geojsonLayer = null;
 
 const regionLookup = {};
+
+// CAROUSEL STATE
+const currentSlide = ref(0);
+const currentTab = ref(0);
+const totalSlides = 3; // Can be dynamic based on images available
 
 const hover = reactive({
   visible: false,
@@ -361,7 +445,28 @@ const openModal = () => {
   modal.visible = true;
 };
 
-const closeModal = () => modal.visible = false;
+const closeModal = () => {
+  modal.visible = false;
+  currentSlide.value = 0;
+  currentTab.value = 0;
+};
+
+// CAROUSEL NAVIGATION
+const prevSlide = () => {
+  currentSlide.value = (currentSlide.value - 1 + totalSlides) % totalSlides;
+};
+
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % totalSlides;
+};
+
+const goToSlide = (index) => {
+  currentSlide.value = index;
+};
+
+const switchTab = (index) => {
+  currentTab.value = index;
+};
 
 // LIFECYCLE
 onMounted(() => {
@@ -452,29 +557,230 @@ onBeforeUnmount(() => {
 /* Modal */
 .modal-overlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(44, 62, 80, 0.3); /* Darker, modern overlay */
+  background: rgba(44, 62, 80, 0.3);
   backdrop-filter: blur(4px);
   z-index: 3000; display: flex; justify-content: center; align-items: center; 
   opacity: 0; pointer-events: none; transition: opacity 0.3s ease; 
 }
-.modal-box { 
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  width: 90%; max-width: 600px; 
-  padding: 40px; border-radius: 24px; 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
-  border: 1px solid rgba(255,255,255,0.5);
-  position: relative; transform: translateY(20px); transition: transform 0.3s ease; 
-}
 .modal-overlay.active { opacity: 1; pointer-events: auto; }
+.modal-box { 
+  background: white;
+  width: 90%; max-width: 500px; 
+  border-radius: 24px; 
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+  position: relative; 
+  transform: translateY(20px); 
+  transition: transform 0.3s ease;
+  overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
 .modal-overlay.active .modal-box { transform: translateY(0); }
-.close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #999; line-height: 1; }
-.modal-header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-.modal-flag { width: 80px; height: 50px; object-fit: cover; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.modal-title { margin: 0; color: #e74c3c; font-size: 24px; }
-.modal-subtitle { color: #888; font-size: 16px; }
-.desc-eng { margin-bottom: 10px; color: #444; line-height: 1.6; }
-.desc-geo { color: #666; font-style: italic; line-height: 1.6; }
+.close-btn { 
+  position: absolute; top: 20px; right: 20px; 
+  font-size: 32px; cursor: pointer; color: #999; 
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.9);
+  border-radius: 50%;
+  line-height: 1;
+  transition: all 0.2s;
+}
+.close-btn:hover {
+  background: white;
+  color: #e74c3c;
+  transform: rotate(90deg);
+}
+
+/* Carousel Styles */
+.carousel-wrapper {
+  padding: 20px;
+}
+
+.carousel-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-slide {
+  min-width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slide-gradient-1 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.slide-gradient-2 {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.slide-icon {
+  width: 120px;
+  height: 120px;
+  color: rgba(255,255,255,0.8);
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.95);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 2;
+}
+
+.carousel-arrow:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+}
+
+.carousel-prev { left: 16px; }
+.carousel-next { right: 16px; }
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+.dot.active {
+  width: 32px;
+  border-radius: 4px;
+  background: #3b82f6;
+}
+
+/* Topic Tabs */
+.topic-tabs {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  background: white;
+}
+
+.topic-tab {
+  flex: 1;
+  padding: 16px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.topic-tab:hover {
+  background: rgba(59, 130, 246, 0.05);
+  color: #3b82f6;
+}
+
+.topic-tab.active {
+  border-bottom-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.tab-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Topic Content */
+.topic-content {
+  padding: 32px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.topic-page {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.topic-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.topic-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  color: #6b7280;
+  margin: 0 0 20px 0;
+}
+
+.topic-text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #4b5563;
+  margin: 0;
+}
+
+.capital-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 12px;
+}
 
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
