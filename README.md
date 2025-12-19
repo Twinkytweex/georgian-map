@@ -1,4 +1,6 @@
-# georgia-map
+# georgian-map
+
+Interactive map to learn about georgian flags and many more...
 
 This template should help get you started developing with Vue 3 in Vite.
 
