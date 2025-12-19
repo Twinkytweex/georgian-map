@@ -31,18 +31,23 @@
         
         <!-- Timer Circle -->
         <div v-if="!isLocked && hover.visible" class="timer-circle">
-           <svg width="40" height="40" viewBox="0 0 40 40">
-             <circle cx="20" cy="20" r="18" fill="none" stroke="#ddd" stroke-width="4" />
+           <svg width="28" height="28" viewBox="0 0 28 28">
+             <circle cx="14" cy="14" r="12" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" />
              <circle 
-               cx="20" cy="20" r="18" fill="none" 
-               stroke="#e74c3c" stroke-width="4"
-               stroke-dasharray="113"
-               :stroke-dashoffset="113 - (113 * lockProgress / 100)"
-               transform="rotate(-90 20 20)"
+               cx="14" cy="14" r="12" fill="none" 
+               stroke="rgba(231, 76, 60, 0.9)" stroke-width="2.5"
+               stroke-dasharray="75.4"
+               :stroke-dashoffset="75.4 - (75.4 * lockProgress / 100)"
+               transform="rotate(-90 14 14)"
              />
            </svg>
         </div>
-        <div v-if="isLocked" class="locked-icon">🔒</div>
+        <div v-if="isLocked" class="locked-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="10" fill="rgba(46, 204, 113, 0.15)" stroke="rgba(46, 204, 113, 0.8)" stroke-width="2"/>
+            <path d="M 10 14 L 12.5 16.5 L 18 11" stroke="rgba(46, 204, 113, 0.9)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
       </div>
       <div class="card-content">
         <h3 class="card-title">{{ hover.name_eng }}</h3>
@@ -68,14 +73,14 @@
             alt="Flag"
           >
           <div>
-            <h2 class="modal-title">{{ modal.data.name_eng }}</h2>
-            <span class="modal-subtitle">{{ modal.data.name_geo }}</span>
+            <h2 class="modal-title">{{ modal.data.name_geo }}</h2>
+            <span class="modal-subtitle">{{ modal.data.name_eng }}</span>
           </div>
         </div>
 
         <div class="modal-body">
-          <p class="desc-eng"><strong>Description:</strong> {{ modal.data.description_eng || 'No description available.' }}</p>
           <p class="desc-geo"><strong>აღწერა:</strong> {{ modal.data.description_geo || 'აღწერა არ არის.' }}</p>
+          <p class="desc-eng"><strong>Description:</strong> {{ modal.data.description_eng || 'No description available.' }}</p>
         </div>
       </div>
     </div>
@@ -168,13 +173,16 @@ const initMap = async () => {
   map = L.map(mapContainer.value, {
     center: [42.1, 43.5],
     zoom: 7.5,
-    minZoom: 7,      // 1) Restrict zoom out
-    maxZoom: 10,     // 1) Restrict zoom in (optional, keeps it cleaner)
-    maxBounds: bounds, // 1) Restrict panning
+    minZoom: 7,
+    maxZoom: 10,
+    maxBounds: bounds,
+    tap: true,  // Enable tap for mobile
+    tapTolerance: 15,  // Increase tap tolerance for touch
     maxBoundsViscosity: 1.0,
     zoomControl: false,
     attributionControl: false,
-    scrollWheelZoom: 'center'
+    scrollWheelZoom: 'center',
+    dragging: !L.Browser.mobile ? true : L.Browser.mobile  // Better mobile dragging
   });
 
   // Close card when clicking map background
@@ -367,8 +375,8 @@ onBeforeUnmount(() => {
 .img-wrapper { position: relative; width: 100%; height: 140px; background: #f0f0f0; }
 .card-img { width: 100%; height: 100%; object-fit: cover; }
 .badge-capital { position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; font-size: 10px; padding: 4px 8px; border-radius: 20px; text-transform: uppercase; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-.timer-circle { position: absolute; top: 10px; left: 10px; pointer-events: none; }
-.locked-icon { position: absolute; top: 10px; left: 10px; font-size: 24px; background: rgba(255,255,255,0.8); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+.timer-circle { position: absolute; top: 8px; left: 8px; pointer-events: none; }
+.locked-icon { position: absolute; top: 8px; left: 8px; pointer-events: none; display: flex; align-items: center; justify-content: center; }
 .card-content { padding: 15px; }
 .card-title { margin: 0; font-weight: 600; font-size: 16px; color: #2c3e50; }
 .card-subtitle { margin: 0 0 10px 0; font-weight: 400; font-size: 13px; color: #7f8c8d; }
@@ -408,4 +416,77 @@ onBeforeUnmount(() => {
 .modal-subtitle { color: #888; font-size: 16px; }
 .desc-eng { margin-bottom: 10px; color: #444; line-height: 1.6; }
 .desc-geo { color: #666; font-style: italic; line-height: 1.6; }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .hover-card {
+    width: calc(100vw - 40px);
+    max-width: 320px;
+    left: 50% !important;
+    transform: translateX(-50%);
+    bottom: 20px;
+    top: auto !important;
+  }
+  
+  .timer-circle, .locked-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .timer-circle svg {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .card-title { font-size: 15px; }
+  .card-subtitle { font-size: 12px; }
+  .card-btn { padding: 12px; font-size: 14px; }
+  
+  .modal-box {
+    width: 95%;
+    padding: 25px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .modal-flag {
+    width: 100%;
+    height: auto;
+    max-height: 120px;
+  }
+  
+  .modal-title { font-size: 20px; }
+  .modal-subtitle { font-size: 14px; }
+  
+  .close-btn {
+    font-size: 32px;
+    top: 10px;
+    right: 15px;
+  }
+  
+  .loading-spinner {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hover-card {
+    width: calc(100vw - 30px);
+  }
+  
+  .modal-box {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .card-title { font-size: 14px; }
+  .modal-title { font-size: 18px; }
+}
 </style>
