@@ -8,11 +8,16 @@
     <!-- Error -->
     <div v-if="error" class="error-toast">
       {{ error }}
-      <button @click="loadData">Retry</button>
+      <button @click="loadData">{{ t.retry }}</button>
     </div>
 
     <!-- Map -->
     <div ref="mapContainer" class="map-container"></div>
+
+    <!-- Language Toggle -->
+    <button class="lang-toggle" @click="toggleLanguage" :title="currentLang === 'en' ? 'Switch to Georgian' : 'Switch to English'">
+      {{ currentLang === 'en' ? 'ქარ' : 'ENG' }}
+    </button>
 
     <!-- Hover Card -->
     <div 
@@ -50,9 +55,9 @@
         </div>
       </div>
       <div class="card-content">
-        <h3 class="card-title">{{ hover.name_eng }}</h3>
-        <h4 class="card-subtitle">{{ hover.name_geo }}</h4>
-        <button class="card-btn" @click.stop="openModal">View Details</button>
+        <h3 class="card-title">{{ hover.name_geo }}</h3>
+        <h4 class="card-subtitle">{{ hover.name_eng }}</h4>
+        <button class="card-btn" @click.stop="openModal">{{ t.viewDetails }}</button>
       </div>
     </div>
 
@@ -79,8 +84,8 @@
         </div>
 
         <div class="modal-body">
-          <p class="desc-geo"><strong>აღწერა:</strong> {{ modal.data.description_geo || 'აღწერა არ არის.' }}</p>
-          <p class="desc-eng"><strong>Description:</strong> {{ modal.data.description_eng || 'No description available.' }}</p>
+          <p class="desc-geo" v-if="currentLang === 'ka'"><strong>აღწერა:</strong> {{ modal.data.description_geo || 'ინფორმაცია ბაზაში არ მოიძებნა.' }}</p>
+          <p class="desc-eng" v-if="currentLang === 'en'"><strong>Description:</strong> {{ modal.data.description_eng || 'No description available.' }}</p>
         </div>
       </div>
     </div>
@@ -88,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/supabase'; // Adjust path
@@ -96,6 +101,36 @@ import { supabase } from '@/supabase'; // Adjust path
 // CONFIG
 const placeholderImg = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Flag_of_Georgia.svg/320px-Flag_of_Georgia.svg.png";
 const TABLE_NAME = 'georgianMap'; 
+
+// LANGUAGE STATE
+const currentLang = ref('en'); // 'en' or 'ka'
+
+const translations = {
+  en: {
+    viewDetails: 'View Details',
+    retry: 'Retry',
+    noData: 'No Data',
+    loading: 'Loading...',
+    fetchingData: 'Fetching region data...',
+    loadingMap: 'Loading map...',
+    noDescription: 'No detailed information found in the database.'
+  },
+  ka: {
+    viewDetails: 'დეტალები',
+    retry: 'თავიდან',
+    noData: 'მონაცემი არ არის',
+    loading: 'იტვირთება...',
+    fetchingData: 'რეგიონის მონაცემების ჩატვირთვა...',
+    loadingMap: 'რუკის ჩატვირთვა...',
+    noDescription: 'დეტალური ინფორმაცია ბაზაში არ მოიძებნა.'
+  }
+};
+
+const t = computed(() => translations[currentLang.value]);
+
+const toggleLanguage = () => {
+  currentLang.value = currentLang.value === 'en' ? 'ka' : 'en';
+}; 
 
 // STATE
 const mapContainer = ref(null);
@@ -138,7 +173,7 @@ const LOCK_DURATION = 1500; // ms
 const loadData = async () => {
   loading.value = true;
   error.value = null;
-  statusMessage.value = "Fetching region data...";
+  statusMessage.value = t.value.fetchingData;
 
   try {
     const { data: dbData, error: dbError } = await supabase.from(TABLE_NAME).select('*');
@@ -151,7 +186,7 @@ const loadData = async () => {
       regionLookup[row.name_eng] = row;
     });
 
-    statusMessage.value = "Loading map...";
+    statusMessage.value = t.value.loadingMap;
     await initMap();
   } catch (err) {
 
@@ -272,7 +307,7 @@ const highlightFeature = (e, feature) => {
   } else {
     Object.assign(hover, { 
       name_eng: geoName, 
-      name_geo: "No Data", 
+      name_geo: t.value.noData, 
       picture_url: null, 
       is_capital: false,
       rawData: null
@@ -316,7 +351,7 @@ const openModal = () => {
   modal.data = hover.rawData || {
     name_eng: hover.name_eng || "Unknown Region",
     name_geo: hover.name_geo || "...",
-    description_eng: "No detailed information found in the database.",
+    description_eng: t.value.noDescription,
     description_geo: "ინფორმაცია ბაზაში არ მოიძებნა.",
     picture_url: null
   };
@@ -352,6 +387,30 @@ onBeforeUnmount(() => {
   overflow: hidden; 
 }
 .map-container { width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
+
+/* Language Toggle Button */
+.lang-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2500;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: #2c3e50;
+}
+.lang-toggle:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
 
 /* Loading & Error */
 .loading-spinner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 15px 25px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: white; color: #555; font-weight: 600; }
