@@ -304,6 +304,13 @@ const initMap = async () => {
     dragging: !L.Browser.mobile ? true : L.Browser.mobile  // Better mobile dragging
   });
 
+  // Add modern dark tile layer for stylish background
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors, © CartoDB',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
   // Close card when clicking map background
   map.on('click', () => {
     isLocked.value = false;
@@ -319,13 +326,13 @@ const initMap = async () => {
     loading.value = false;
 
     geojsonLayer = L.geoJson(geoData, {
-      // 2) Modern Look: Give polygons a subtle fill so they stand out
+      // Modern styling for dark theme
       style: () => ({ 
-        fillColor: '#2c3e50', 
-        weight: 1.5, 
-        color: '#ffffff', 
-        opacity: 0.6,
-        fillOpacity: 0.05 
+        fillColor: '#3b82f6', 
+        weight: 2, 
+        color: '#60a5fa', 
+        opacity: 0.9,
+        fillOpacity: 0.2 
       }),
       onEachFeature: (feature, layer) => {
         layer.on({
@@ -334,6 +341,34 @@ const initMap = async () => {
           click: L.DomEvent.stopPropagation
         });
       }
+    }).addTo(map);
+
+    // Create inverted mask to hide neighboring countries
+    // This creates a large rectangle with Georgia cut out
+    const worldBounds = [
+      [[-90, -180], [-90, 180], [90, 180], [90, -180], [-90, -180]]
+    ];
+    
+    // Get coordinates of all Georgia regions to create the cutout
+    const georgiaCoords = [];
+    geoData.features.forEach(feature => {
+      if (feature.geometry.type === 'Polygon') {
+        georgiaCoords.push(feature.geometry.coordinates[0].map(coord => [coord[1], coord[0]]));
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(polygon => {
+          georgiaCoords.push(polygon[0].map(coord => [coord[1], coord[0]]));
+        });
+      }
+    });
+    
+    // Combine world bounds with Georgia cutouts (inverted mask)
+    const maskCoords = [...worldBounds, ...georgiaCoords];
+    
+    L.polygon(maskCoords, {
+      fillColor: '#0f172a',
+      fillOpacity: 0.95,
+      stroke: false,
+      interactive: false
     }).addTo(map);
 
     map.fitBounds(geojsonLayer.getBounds());
@@ -487,8 +522,16 @@ onBeforeUnmount(() => {
   position: relative; 
   width: 100vw; height: 100vh; 
   font-family: 'Poppins', sans-serif; 
-  /* 3) Nice Background: Subtle gradient */
-  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); 
+  /* Modern dark theme with subtle geometric patterns */
+  background: 
+    /* Subtle grid pattern */
+    repeating-linear-gradient(90deg, rgba(59, 130, 246, 0.03) 0px, transparent 2px, transparent 50px, rgba(59, 130, 246, 0.03) 52px),
+    repeating-linear-gradient(0deg, rgba(59, 130, 246, 0.03) 0px, transparent 2px, transparent 50px, rgba(59, 130, 246, 0.03) 52px),
+    /* Diagonal accent lines */
+    repeating-linear-gradient(45deg, transparent, transparent 100px, rgba(96, 165, 250, 0.02) 100px, rgba(96, 165, 250, 0.02) 200px),
+    /* Deep modern gradient */
+    radial-gradient(ellipse at top, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   overflow: hidden; 
 }
 .map-container { width: 100%; height: 100%; z-index: 1; cursor: crosshair; }
@@ -780,6 +823,48 @@ onBeforeUnmount(() => {
   font-size: 14px;
   font-weight: 600;
   margin-top: 12px;
+}
+
+/* Region Flag Markers */
+.region-flag-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.flag-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.flag-img {
+  width: 50px;
+  height: 35px;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(96, 165, 250, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.flag-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(59, 130, 246, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Mobile Responsive Styles */
